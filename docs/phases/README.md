@@ -10,7 +10,7 @@ can follow the same path step by step.
 
 | Phase | Topic | Status |
 |---|---|---|
-| [Phase 0](phase_00_repository_foundation.md) | Repository foundation | Started |
+| [Phase 0](phase_00_repository_foundation.md) | Repository foundation | Complete |
 | Phase 1 | Tiny educational tokenizer and dataset | Planned |
 | Phase 2 | Smallest decoder-only LM | Planned |
 | Phase 3 | Manual attention learning phase | Planned |
@@ -71,4 +71,3 @@ Commands and expected results.
 ## Open Questions
 Things to revisit later.
 ```
-
