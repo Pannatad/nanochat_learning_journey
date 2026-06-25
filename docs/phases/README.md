@@ -11,7 +11,7 @@ can follow the same path step by step.
 | Phase | Topic | Status |
 |---|---|---|
 | [Phase 0](phase_00_repository_foundation.md) | Repository foundation | Complete |
-| Phase 1 | Tiny educational tokenizer and dataset | Planned |
+| [Phase 1](phase_01_tiny_tokenizer_and_dataset.md) | Tiny educational tokenizer and dataset | Complete |
 | Phase 2 | Smallest decoder-only LM | Planned |
 | Phase 3 | Manual attention learning phase | Planned |
 | Phase 4 | Transformer block baseline | Planned |
@@ -67,7 +67,4 @@ Small controlled variations.
 
 ## Tests / Checks
 Commands and expected results.
-
-## Open Questions
-Things to revisit later.
 ```
