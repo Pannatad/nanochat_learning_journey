@@ -1,6 +1,11 @@
+import pytest
 import torch
 
-from llm_lab.model.attention import SingleHeadCausalSelfAttention, make_causal_mask
+from llm_lab.model.attention import (
+    MultiHeadCausalSelfAttention,
+    SingleHeadCausalSelfAttention,
+    make_causal_mask,
+)
 
 
 def test_causal_mask():
@@ -37,3 +42,15 @@ def test_single_head_attention_cannot_attend_to_future_tokens():
 
     assert weights.shape == (1, 3, 3)
     assert torch.all(weights[0].triu(diagonal=1) == 0)
+
+
+def test_multi_head_attention_output_shape():
+    x = torch.rand(1, 3, 8)
+    attention = MultiHeadCausalSelfAttention(n_head=2, d_model=8)
+    out = attention(x)
+    assert x.shape == out.shape
+
+
+def test_multi_head_attention_requires_even_head_split():
+    with pytest.raises(ValueError):
+        MultiHeadCausalSelfAttention(d_model=10, n_head=3)

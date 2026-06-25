@@ -33,3 +33,24 @@ class SingleHeadCausalSelfAttention(nn.Module):
         if return_attention_weights:
             return out, wei
         return out
+
+
+class MultiHeadCausalSelfAttention(nn.Module):
+    def __init__(self, n_head: int, d_model: int):
+        super().__init__()
+        if d_model % n_head != 0:
+            raise ValueError("d_model must be divisible by num_heads")
+        self.n_head = n_head
+        self.d_model = d_model
+        self.head_dim = d_model // n_head
+        self.head = nn.ModuleList(
+            [SingleHeadCausalSelfAttention(self.head_dim) for _ in range(n_head)]
+        )
+        self.output_projection = nn.Linear(d_model, d_model)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x_heads = x.split(self.head_dim, dim=-1)
+        output = [head(x_part) for head, x_part in zip(self.head, x_heads)]
+        out = torch.cat(output, dim=-1)
+        out = self.output_projection(out)
+        return out
