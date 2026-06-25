@@ -8,7 +8,9 @@ version = "0.1.0"
 description = "A readable lab for building language models from scratch."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "torch>=2.0",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -25,4 +27,3 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 88
 target-version = "py311"
-

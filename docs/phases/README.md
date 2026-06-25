@@ -12,7 +12,7 @@ can follow the same path step by step.
 |---|---|---|
 | [Phase 0](phase_00_repository_foundation.md) | Repository foundation | Complete |
 | [Phase 1](phase_01_tiny_tokenizer_and_dataset.md) | Tiny educational tokenizer and dataset | Complete |
-| Phase 2 | Smallest decoder-only LM | Planned |
+| [Phase 2](phase_02_smallest_decoder_only_lm.md) | Smallest decoder-only LM | Complete |
 | Phase 3 | Manual attention learning phase | Planned |
 | Phase 4 | Transformer block baseline | Planned |
 | Phase 5 | Minimal pretraining loop | Planned |
