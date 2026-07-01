@@ -131,18 +131,18 @@ gradient -> momentum estimate -> scale estimate -> parameter update
 
 The first moving average tracks the direction of recent gradients:
 
-```text
-m_t = beta1 * m_(t-1) + (1 - beta1) * gradient
-```
+$$
+m_t = \beta_1 m_{t-1} + (1 - \beta_1) g_t
+$$
 
 This is like momentum. If several recent gradients point in a similar
 direction, Adam keeps moving in that direction more smoothly.
 
 The second moving average tracks the size of recent squared gradients:
 
-```text
-v_t = beta2 * v_(t-1) + (1 - beta2) * gradient^2
-```
+$$
+v_t = \beta_2 v_{t-1} + (1 - \beta_2) g_t^2
+$$
 
 This is used for adaptive scaling. Parameters with consistently large
 gradients get smaller effective updates, while parameters with smaller
@@ -151,16 +151,20 @@ gradients can get relatively larger updates.
 Early in training, both `m_t` and `v_t` start near zero, so Adam applies bias
 correction before using them:
 
-```text
-m_hat = m_t / (1 - beta1^t)
-v_hat = v_t / (1 - beta2^t)
-```
+$$
+\hat{m}_t = \frac{m_t}{1 - \beta_1^t}
+$$
+
+$$
+\hat{v}_t = \frac{v_t}{1 - \beta_2^t}
+$$
 
 Then the Adam-style update is roughly:
 
-```text
-parameter = parameter - learning_rate * m_hat / (sqrt(v_hat) + eps)
-```
+$$
+\theta_t = \theta_{t-1}
+- \alpha \frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \epsilon}
+$$
 
 `eps` is just a tiny number that prevents division by zero.
 
