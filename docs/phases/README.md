@@ -15,7 +15,7 @@ can follow the same path step by step.
 | [Phase 2](phase_02_smallest_decoder_only_lm.md) | Smallest decoder-only LM | Medium | Complete |
 | [Phase 3](phase_03_manual_attention_learning.md) | Manual attention learning phase | Hard | Complete |
 | [Phase 4](phase_04_transformer_block_baseline.md) | Transformer block baseline | Hard | Complete |
-| Phase 5 | Minimal pretraining loop | Hard | Planned |
+| [Phase 5](phase_05_minimal_pretraining_loop.md) | Minimal pretraining loop | Hard | Complete |
 | Phase 6 | Reproducible experiment system | Medium | Planned |
 | Phase 7 | Trainable BPE tokenizer | Hard | Planned |
 | Phase 8 | Tokenized data pipeline | Medium | Planned |
