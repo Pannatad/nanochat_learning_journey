@@ -1,0 +1,24 @@
+seed: 1234
+
+model:
+  vocab_size: 256
+  d_model: 16
+
+training:
+  steps: 10
+  block_size: 16
+
+optimizer:
+  lr: 0.01
+  weight_decay: 0.1
+
+data:
+  train_text: "Hello, How are you?"
+  val_text: "The Weather today is "
+
+generation:
+  prompt: "My name is"
+  max_new_tokens: 20
+
+output:
+  root_dir: "outputs/runs"

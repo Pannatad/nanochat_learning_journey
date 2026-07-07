@@ -16,7 +16,7 @@ can follow the same path step by step.
 | [Phase 3](phase_03_manual_attention_learning.md) | Manual attention learning phase | Hard | Complete |
 | [Phase 4](phase_04_transformer_block_baseline.md) | Transformer block baseline | Hard | Complete |
 | [Phase 5](phase_05_minimal_pretraining_loop.md) | Minimal pretraining loop | Hard | Complete |
-| Phase 6 | Reproducible experiment system | Medium | Planned |
+| [Phase 6](phase_06_reproducible_experiment_system.md) | Reproducible experiment system | Medium | Complete |
 | Phase 7 | Trainable BPE tokenizer | Hard | Planned |
 | Phase 8 | Tokenized data pipeline | Medium | Planned |
 | Phase 9 | nanochat-style architecture baseline | Very hard | Planned |

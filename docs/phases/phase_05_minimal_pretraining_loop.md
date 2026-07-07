@@ -162,8 +162,10 @@ $$
 Then the Adam-style update is roughly:
 
 $$
-\theta_t = \theta_{t-1}
+\begin{aligned}
+\theta_t &= \theta_{t-1}
 - \alpha \frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \epsilon}
+\end{aligned}
 $$
 
 `eps` is just a tiny number that prevents division by zero.
