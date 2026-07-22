@@ -18,7 +18,7 @@ can follow the same path step by step.
 | [Phase 5](phase_05_minimal_pretraining_loop.md) | Minimal pretraining loop | Hard | Complete |
 | [Phase 6](phase_06_reproducible_experiment_system.md) | Reproducible experiment system | Medium | Complete |
 | [Phase 7](phase_07_trainable_bpe_tokenizer.md) | Trainable BPE tokenizer | Hard | Complete |
-| Phase 8 | Tokenized data pipeline | Medium | Planned |
+| [Phase 8](phase_08_tokenized_data_pipeline.md) | Tokenized data pipeline | Medium | Complete |
 | Phase 9 | nanochat-style architecture baseline | Very hard | Planned |
 | Phase 10 | RMSNorm | Medium | Planned |
 | Phase 11 | RoPE | Hard | Planned |

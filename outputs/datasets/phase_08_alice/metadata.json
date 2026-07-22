@@ -1,0 +1,45 @@
+{
+  "corpus_sha256": "68f71c8e1ff856f80d20f6bbcdad95fceded8e322dc07637b76983ce75e1b3a5",
+  "shard_size": 10000,
+  "shards": [
+    {
+      "filename": "shard_000.pt",
+      "token_count": 10000
+    },
+    {
+      "filename": "shard_001.pt",
+      "token_count": 10000
+    },
+    {
+      "filename": "shard_002.pt",
+      "token_count": 10000
+    },
+    {
+      "filename": "shard_003.pt",
+      "token_count": 10000
+    },
+    {
+      "filename": "shard_004.pt",
+      "token_count": 10000
+    },
+    {
+      "filename": "shard_005.pt",
+      "token_count": 10000
+    },
+    {
+      "filename": "shard_006.pt",
+      "token_count": 10000
+    },
+    {
+      "filename": "shard_007.pt",
+      "token_count": 10000
+    },
+    {
+      "filename": "shard_008.pt",
+      "token_count": 4335
+    }
+  ],
+  "token_count": 84335,
+  "tokenizer_sha256": "59e6bbda4f221b728fb4596934e96bbb8a664d55ee09240c37b4d84f013e17b9",
+  "version": 1
+}
