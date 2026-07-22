@@ -1,67 +1,96 @@
-# Phase 00: Project Setup
+# Phase 00: Project Foundation
 
-## What We Built
+This phase set up the project before any model code existed. The goal was to
+make the repo importable, testable, lintable, and ready to grow phase by phase.
 
-We initialized the project foundation before writing model code. This phase set
-up the repo files, Python package layout, basic testing/linting tools, and the
-GitHub push workflow.
+The important idea is that an ML project is still a software project first. If
+the package layout, tests, and tooling are clean early, every later model change
+is easier to verify.
 
-## What I Learned
+## Repository Files
 
-- `README.md` stores the project details and overview.
-- `AGENTS.md` stores instructions for the coding agent.
-- `pyproject.toml` is the main project setup/config file.
-- `ruff` checks code quality and catches suspicious mistakes or messy code.
-- `pytest` runs tests using `assert`.
-- `black` is a code formatter, even though this phase uses Ruff for checks.
-- `.gitignore` tells Git which files/folders not to track.
-- `.python-version` records the Python version for the project.
-- `src/` is the source code folder.
-- `src/llm_lab/` is the Python package, so the project can be imported with
-  `import llm_lab`.
-- `src/llm_lab/__init__.py` marks the folder as a Python package and stores the
-  package version.
-- `tests/` contains tests to check whether important parts work properly.
-- GitHub should be created as an empty repo for this case: no README, no
-  license, and no `.gitignore`, because those files already exist locally.
-- If pushing a GitHub Actions workflow fails, the GitHub token needs workflow
-  permission enabled.
+`README.md` explains what the project is. It is the first place a reader should
+look for the project overview.
 
-## High-Level Understanding
+`AGENTS.md` stores local instructions for how the coding agent should work in
+this repo. In this project, those instructions say to keep explanations concise
+and to build the main structure before refining smaller pieces.
 
-Phase 0 is project setup. It does not build the LLM yet. It makes sure the repo
-has a clean structure, can be imported as a Python package, can run tests, can
-run code checks, and can be pushed to GitHub.
+`pyproject.toml` is the main Python project configuration file. It records the
+package name, Python version, dependencies, pytest settings, and Ruff settings.
+Instead of scattering tool configuration across many files, this repo keeps the
+core Python setup in one place.
 
-## Intuition / Small Example
+`.gitignore` tells Git which files should not be tracked. Typical examples are
+virtual environments, caches, generated outputs, and local machine files.
 
-The simplest proof that the setup works is importing the package:
+`.python-version` records the Python version expected by the project. This
+helps avoid the "works on my Python version" problem.
 
-```bash
-python -c "import llm_lab"
+## Package Layout
+
+The source code lives under:
+
+```text
+src/llm_lab/
 ```
 
-If this works, Python can find the package inside `src/llm_lab`. Later, when
-the model code is added, it can live inside the same package structure.
+The `src/` layout keeps package code separate from tests, docs, notebooks, and
+scripts. The package itself is named `llm_lab`, so project code can be imported
+with:
 
-## Detailed Explanation
+```python
+import llm_lab
+```
 
-The repo starts with documentation and config files:
+The file:
 
-- `README.md` explains the project.
-- `AGENTS.md` explains how the agent should help in this repo.
-- `pyproject.toml` defines package metadata, Python version, dev tools, pytest
-  config, and Ruff config.
-- `.gitignore` keeps local/generated files out of Git.
-- `.python-version` records the Python version.
+```text
+src/llm_lab/__init__.py
+```
 
-The source code starts in `src/llm_lab/`. The `__init__.py` file makes
-`llm_lab` importable and currently stores the version.
+makes `llm_lab` a Python package. It also stores the package version.
 
-The first test is in `tests/test_import.py`. It imports `llm_lab` to confirm
-the package setup works before any model code exists.
+A small import test proves the project is wired correctly:
 
-The GitHub setup flow was:
+```python
+import llm_lab
+```
+
+If this import works, Python can find the project package.
+
+## Tests And Linting
+
+`pytest` runs tests. Tests are small pieces of code that check expected
+behavior with `assert`.
+
+Example:
+
+```python
+assert llm_lab.__version__ == "0.1.0"
+```
+
+Ruff checks code quality. It catches issues like unused imports, formatting
+problems, suspicious patterns, and style mistakes. Ruff gives fast feedback
+before code becomes messy.
+
+The basic local checks are:
+
+```bash
+.venv/bin/pytest
+.venv/bin/ruff check .
+```
+
+These commands became the standard safety check for later phases.
+
+## Git And GitHub Setup
+
+Git tracks local file changes. GitHub stores the remote copy.
+
+For this project, the GitHub repo should be created empty. Do not initialize it
+with a README, license, or `.gitignore`, because those already exist locally.
+
+The basic push flow is:
 
 ```bash
 git add .
@@ -70,40 +99,23 @@ git remote add origin "<repo link>"
 git push -u origin main
 ```
 
-The GitHub repo should be created empty first. Do not initialize it with a
-README, license, or `.gitignore`, because those files are already in the local
-repo.
-
 One issue came up during push: GitHub rejected the workflow file because the
-token did not have workflow permission. The fix was to edit/refresh the token
-and enable workflow permission, then push again.
+token did not have workflow permission. The fix was to enable workflow
+permission for the token and push again.
 
-## Experiments To Try
+## Small Example
 
-- Change the package version in `src/llm_lab/__init__.py` and check that the
-  import command prints the new value.
-- Temporarily break the package name in the test to see how pytest reports the
-  failure.
-- Run Ruff after adding an unused import to understand lint feedback.
-
-## Tests / Checks
+The simplest proof that Phase 0 works is:
 
 ```bash
 .venv/bin/python -c "import llm_lab; print(llm_lab.__version__)"
-.venv/bin/pytest
-.venv/bin/ruff check .
 ```
 
-Expected result:
+Expected output:
 
-- import prints `0.1.0`;
-- pytest passes;
-- Ruff reports all checks passed.
-- GitHub Actions CI passes after pushing.
+```text
+0.1.0
+```
 
-## Open Questions
-
-- Should this repo use plain `pip` or `uv` long term?
-- When should the first real dependency, PyTorch, be added?
-- Should we add `black`, or keep Ruff as the only formatting/checking tool for
-  now?
+That tiny command proves the package is importable, the `src/` layout works,
+and the project has a version.

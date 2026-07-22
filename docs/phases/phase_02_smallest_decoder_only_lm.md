@@ -1,37 +1,28 @@
 # Phase 02: Tiny Decoder-Only Model
 
-## What We Built
+This phase created the first language model skeleton. It does not have
+attention yet. It only learns the basic path from token IDs to logits.
 
-We built the smallest decoder-only language model skeleton. The model takes
-token IDs, looks up token embeddings, projects those embeddings back to
-vocabulary-sized logits, and lets the loss be computed outside the model.
+The model flow is:
 
-## What I Learned
+$$
+\text{token IDs}
+\rightarrow \text{token embeddings}
+\rightarrow \text{output head}
+\rightarrow \text{logits}
+$$
 
-- I learned that `nn.Embedding(vocab_size, d_model)` is used for token
-  embeddings.
-- I learned that token IDs shaped `(B, T)` become embeddings shaped
-  `(B, T, d_model)`.
-- I learned that `nn.Linear(input, output)` projects vectors from one dimension
-  to another.
-- I learned that the output logits should have shape `(B, T, vocab_size)`.
-- I learned that cross-entropy uses logits and targets, with logits flattened
-  to `(B * T, C)` and targets flattened to `(B * T)`.
+## Token IDs
 
-## High-Level Understanding
+The input to the model is a tensor of token IDs shaped:
 
-Phase 2 creates the first tiny language model. It does not have attention yet.
-It only learns this basic path:
+$$
+(B, T)
+$$
 
-```text
-token IDs -> token embedding -> linear output head -> logits -> cross entropy
-```
+`B` is batch size. `T` is sequence length.
 
-The model returns logits. The training objective stays outside the model.
-
-## Intuition / Small Example
-
-If the input tokens are:
+Example:
 
 ```python
 x = [
@@ -40,66 +31,127 @@ x = [
 ]
 ```
 
-then the input shape is:
+Shape:
 
-```text
+$$
 (B, T) = (2, 3)
-```
+$$
 
-After token embedding:
+Each number is a token ID from the tokenizer.
+
+## Token Embeddings
+
+`nn.Embedding(vocab_size, d_model)` creates a learned table with one vector per
+token ID.
+
+For the byte tokenizer:
+
+$$
+\text{vocab\_size} = 256
+$$
+
+If:
+
+$$
+d_{\text{model}} = 16
+$$
+
+then each token ID becomes a vector of length `16`.
+
+Shape change:
+
+$$
+(B, T) \rightarrow (B, T, d_{\text{model}})
+$$
+
+Example:
+
+$$
+(2, 3) \rightarrow (2, 3, 16)
+$$
+
+## Output Head
+
+`nn.Linear(d_model, vocab_size)` projects each token vector back to vocabulary
+scores.
+
+Shape change:
+
+$$
+(B, T, d_{\text{model}})
+\rightarrow
+(B, T, \text{vocab\_size})
+$$
+
+The output is called logits. Logits are raw scores, one score for every
+possible next token.
+
+For byte-level language modeling:
+
+$$
+\text{logits shape} = (B, T, 256)
+$$
+
+## Cross-Entropy Loss
+
+The model returns logits. The loss is computed outside the model.
+
+Cross entropy compares:
+
+$$
+\text{one vector of vocabulary scores}
+\rightarrow
+\text{one correct token ID}
+$$
+
+The logits start as:
+
+$$
+(B, T, \text{vocab\_size})
+$$
+
+Targets start as:
+
+$$
+(B, T)
+$$
+
+For cross entropy, batch and time are flattened together:
+
+$$
+\text{logits}: (B, T, C) \rightarrow (B \cdot T, C)
+$$
+
+$$
+\text{targets}: (B, T) \rightarrow (B \cdot T)
+$$
+
+This turns every token position into one classification example.
+
+## Small Example
+
+If:
+
+$$
+B = 2,\quad T = 3,\quad \text{vocab\_size} = 256
+$$
+
+then the model produces:
+
+$$
+\text{logits shape} = (2, 3, 256)
+$$
+
+There are:
+
+$$
+2 \cdot 3 = 6
+$$
+
+next-token predictions in that batch.
+
+Each row after flattening asks:
 
 ```text
-(B, T, d_model)
+which of the 256 tokens should come next?
 ```
-
-After the output head:
-
-```text
-(B, T, vocab_size)
-```
-
-For cross-entropy, the logits and targets are flattened:
-
-```text
-logits:  (B, T, C) -> (B * T, C)
-targets: (B, T)    -> (B * T)
-```
-
-This means each token position becomes one classification example.
-
-## Detailed Explanation
-
-`nn.Embedding(vocab_size, d_model)` creates a table with one learned vector per
-token ID. For a byte tokenizer, `vocab_size` is `256`. If `d_model` is `16`,
-each token becomes a vector of length `16`.
-
-`nn.Linear(d_model, vocab_size)` converts each embedding vector into logits.
-The logits are raw scores, one score for each possible next token.
-
-`F.cross_entropy(logits, targets)` internally applies the softmax idea and
-penalizes the model when the correct token has low probability. The logits are
-flattened to `(B * T, C)` because cross-entropy expects one row per prediction.
-The targets are flattened to `(B * T)` because each prediction has one correct
-class ID.
-
-## Experiments To Try
-
-- Change `d_model` and check that the logits shape still ends with
-  `vocab_size`.
-- Change `vocab_size` and check that the output head changes the last
-  dimension.
-- Print the loss before any training and confirm it is finite.
-
-## Tests / Checks
-
-```bash
-.venv/bin/pytest
-.venv/bin/ruff check .
-```
-
-Expected result:
-
-- model creation test passes;
-- logits shape test passes;
-- finite cross-entropy loss test passes;
-- Ruff reports all checks passed.

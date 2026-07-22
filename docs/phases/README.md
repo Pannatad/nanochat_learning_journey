@@ -17,7 +17,7 @@ can follow the same path step by step.
 | [Phase 4](phase_04_transformer_block_baseline.md) | Transformer block baseline | Hard | Complete |
 | [Phase 5](phase_05_minimal_pretraining_loop.md) | Minimal pretraining loop | Hard | Complete |
 | [Phase 6](phase_06_reproducible_experiment_system.md) | Reproducible experiment system | Medium | Complete |
-| Phase 7 | Trainable BPE tokenizer | Hard | Planned |
+| [Phase 7](phase_07_trainable_bpe_tokenizer.md) | Trainable BPE tokenizer | Hard | Complete |
 | Phase 8 | Tokenized data pipeline | Medium | Planned |
 | Phase 9 | nanochat-style architecture baseline | Very hard | Planned |
 | Phase 10 | RMSNorm | Medium | Planned |
@@ -42,29 +42,24 @@ can follow the same path step by step.
 | Phase 29 | Experiment matrix | Hard | Planned |
 | Phase 30 | First complete nanochat-style release | Very hard | Planned |
 
-## Phase Note Template
+## Phase Note Style
 
 ```markdown
 # Phase NN: Title
 
-## What We Built
-Short summary of the code or system added.
+Short intro explaining what this phase added and why it matters.
 
-## What I Learned
-The main concepts learned in this phase.
+## Main Concept
+Explain the central idea in plain language.
 
-## High-Level Understanding
-The simple mental model.
+## Related Concept
+Explain another important idea from the phase.
 
-## Intuition / Small Example
-A tiny example, toy numbers, or diagram.
+## Small Example
+Use tiny numbers, shapes, or a short code snippet.
 
-## Detailed Explanation
-Only the necessary technical details.
-
-## Experiments To Try
-Small controlled variations.
-
-## Tests / Checks
-Commands and expected results.
+Continue with concept sections as needed. Phase documents should read like
+learning notes, not like chat responses. Do not use the fixed sections
+`High-Level Understanding`, `Intuition / Small Example`, or
+`Detailed Explanation` in the phase files.
 ```

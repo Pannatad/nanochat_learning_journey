@@ -1,155 +1,100 @@
 # Phase 05: Minimal Pretraining Loop
 
-## What We Built
+This phase turned the model from "can produce logits" into "can run a tiny
+training loop." It introduced loss computation, AdamW, one training step,
+validation, greedy generation, JSONL logging, and a CPU smoke script.
 
-We built the first minimal pretraining loop. It can compute language-model
-loss, create an AdamW optimizer, run one training step, run validation without
-updating weights, generate token IDs greedily, and run a 10-step CPU smoke
-training script.
+The training flow is:
 
-The smoke script writes:
+$$
+(x, y)
+\rightarrow \text{model}(x)
+\rightarrow \text{logits}
+\rightarrow \text{cross-entropy loss}
+\rightarrow \text{backward}
+\rightarrow \text{optimizer step}
+\rightarrow \text{log loss}
+$$
 
-```text
-outputs/phase_05/train_log.jsonl
-outputs/phase_05/generated.txt
+## Loss Computation
+
+The model returns logits shaped:
+
+$$
+(B, T, \text{vocab\_size})
+$$
+
+Targets are token IDs shaped:
+
+$$
+(B, T)
+$$
+
+Cross entropy expects one row per prediction, so batch and time are flattened:
+
+$$
+\text{logits}: (B, T, \text{vocab\_size})
+\rightarrow
+(B \cdot T, \text{vocab\_size})
+$$
+
+$$
+\text{targets}: (B, T) \rightarrow (B \cdot T)
+$$
+
+Example:
+
+$$
+B = 2,\quad T = 3,\quad \text{vocab\_size} = 256
+$$
+
+The batch contains:
+
+$$
+2 \cdot 3 = 6
+$$
+
+next-token prediction problems.
+
+## AdamW Optimizer
+
+AdamW updates model parameters after gradients are computed.
+
+The optimizer is built from:
+
+```python
+model.parameters()
 ```
 
-## What I Learned
-
-- I learned that `x` and `y` are both token ID tensors with shape `(B, T)`.
-- I learned that model logits have shape `(B, T, vocab_size)`.
-- I learned that cross entropy needs logits flattened to `(B * T, vocab_size)`
-  and targets flattened to `(B * T)`.
-- I learned that `optimizer.zero_grad()` clears old gradients before
-  `loss.backward()`.
-- I learned that validation uses `model.eval()` and `torch.no_grad()` because
-  it measures loss without training.
-- I learned that generation repeatedly uses the last token's logits to choose
-  the next token.
-
-## High-Level Understanding
-
-Pretraining teaches the model to predict the next token. For each input token
-sequence, the target is the same sequence shifted one position to the right.
-
-The training loop is:
-
-```text
-x, y batch
--> model(x)
--> logits
--> cross-entropy loss
--> backward
--> optimizer step
--> log loss
-```
-
-Validation uses the same forward and loss calculation, but skips backward and
-optimizer updates.
-
-## Intuition / Small Example
-
-For tokens:
-
-```text
-[10, 20, 30, 40, 50]
-```
-
-with `block_size = 4`, one next-token example is:
-
-```text
-x = [10, 20, 30, 40]
-y = [20, 30, 40, 50]
-```
-
-The model predicts a full vocabulary score vector at every position:
-
-```text
-logits shape: (B, T, vocab_size)
-target shape: (B, T)
-```
-
-Then loss flattens batch and time:
-
-```text
-logits:  (B, T, vocab_size) -> (B * T, vocab_size)
-targets: (B, T)             -> (B * T)
-```
-
-Generation starts from a prompt and appends one token at a time:
-
-```text
-start tokens
--> model
--> logits[:, -1, :]
--> argmax
--> append next token
--> repeat
-```
-
-## Detailed Explanation
-
-### Loss
-
-`compute_loss` receives logits and targets. The logits contain one vocabulary
-prediction for every token position. The targets contain the correct next-token
-IDs.
-
-Cross entropy compares:
-
-```text
-one prediction vector -> one correct token ID
-```
-
-So `(B, T)` token positions become `B * T` separate prediction problems.
-
-### Optimizer
-
-`make_optimizer` creates AdamW over `model.parameters()`. AdamW is the optimizer
-that decides how to change each parameter after `loss.backward()` computes
-gradients.
-
-For this phase, we only expose:
+The first exposed settings are:
 
 ```text
 learning rate
 weight decay
 ```
 
-AdamW's default `betas` and `eps` are good enough for this first loop:
-
-```text
-betas = (0.9, 0.999)
-eps = 1e-8
-```
-
-The high-level Adam idea is:
-
-```text
-gradient -> momentum estimate -> scale estimate -> parameter update
-```
-
-The first moving average tracks the direction of recent gradients:
+Adam keeps moving averages of gradients. The first moving average tracks the
+recent direction of gradients:
 
 $$
 m_t = \beta_1 m_{t-1} + (1 - \beta_1) g_t
 $$
 
-This is like momentum. If several recent gradients point in a similar
-direction, Adam keeps moving in that direction more smoothly.
+This behaves like momentum. If recent gradients point in a similar direction,
+the update moves more smoothly.
 
-The second moving average tracks the size of recent squared gradients:
+The second moving average tracks squared gradients:
 
 $$
 v_t = \beta_2 v_{t-1} + (1 - \beta_2) g_t^2
 $$
 
-This is used for adaptive scaling. Parameters with consistently large
-gradients get smaller effective updates, while parameters with smaller
-gradients can get relatively larger updates.
+This gives adaptive scaling. Parameters with large recent gradients get smaller
+effective updates; parameters with smaller recent gradients can get relatively
+larger updates.
 
-Early in training, both `m_t` and `v_t` start near zero, so Adam applies bias
-correction before using them:
+At the beginning, `m_t` and `v_t` are biased toward zero, so Adam applies bias
+correction:
 
 $$
 \hat{m}_t = \frac{m_t}{1 - \beta_1^t}
@@ -159,7 +104,7 @@ $$
 \hat{v}_t = \frac{v_t}{1 - \beta_2^t}
 $$
 
-Then the Adam-style update is roughly:
+The rough Adam update is:
 
 $$
 \begin{aligned}
@@ -168,25 +113,24 @@ $$
 \end{aligned}
 $$
 
-`eps` is just a tiny number that prevents division by zero.
+`eps` is a tiny value that prevents division by zero.
 
-AdamW differs from older Adam-with-weight-decay by decoupling weight decay from
-the adaptive gradient update. In plain terms:
+AdamW separates weight decay from the adaptive gradient update:
 
-```text
-Adam update:        use gradients, momentum, and scaling
-weight decay step:  separately shrink weights a little
-```
+$$
+\begin{aligned}
+\text{Adam update} &:\ \text{use gradients, momentum, and scaling} \\
+\text{weight decay step} &:\ \text{separately shrink weights a little}
+\end{aligned}
+$$
 
-This matters because coupling weight decay into the gradient can distort the
-regularization through Adam's adaptive scaling. AdamW keeps the optimization
-update and the weight-shrinking regularization as separate ideas.
+This avoids distorting weight decay through Adam's adaptive scaling.
 
-### Training Step
+## Training Step
 
 One training step does:
 
-```text
+```python
 model.train()
 optimizer.zero_grad()
 logits = model(x)
@@ -195,74 +139,122 @@ loss.backward()
 optimizer.step()
 ```
 
-The important detail is that gradients from old steps must be cleared before
-the new backward pass.
+`optimizer.zero_grad()` is important because PyTorch accumulates gradients by
+default. Without clearing old gradients, the next update would mix gradients
+from previous batches with the current batch.
 
-### Validation Step
+`loss.backward()` computes gradients. `optimizer.step()` updates the model
+weights in place.
 
-Validation does:
+## Validation Step
 
-```text
+Validation measures loss without training.
+
+It uses:
+
+```python
 model.eval()
 with torch.no_grad():
-    logits = model(x)
-    loss = compute_loss(logits, y)
+    ...
 ```
 
-This keeps validation as measurement only. No gradients are stored, and no
-parameters are updated.
+`model.eval()` switches the model into evaluation mode. `torch.no_grad()` tells
+PyTorch not to track gradients. This saves memory and makes it clear that
+validation is measurement only.
 
-### Generation
+Validation returns a loss number, but it does not update parameters.
 
-The first generation helper uses greedy decoding:
+## Greedy Generation
+
+Generation starts with prompt token IDs shaped:
+
+$$
+(B, T)
+$$
+
+Each loop:
+
+$$
+\text{tokens}
+\rightarrow \text{model}
+\rightarrow \text{last-position logits}
+\rightarrow \arg\max
+\rightarrow \text{append next token}
+$$
+
+The important line is:
+
+```python
+last_logits = logits[:, -1, :]
+```
+
+Shape:
+
+$$
+(B, \text{vocab\_size})
+$$
+
+Greedy decoding uses:
+
+```python
+next_token = torch.argmax(last_logits, dim=-1)
+```
+
+Then `unsqueeze(-1)` changes the shape from:
+
+$$
+(B) \rightarrow (B, 1)
+$$
+
+so the token can be appended to the sequence.
+
+Because this model is barely trained, generated text can look strange or
+repetitive. Phase 5 proves the mechanics, not model quality.
+
+## JSONL Logging
+
+The smoke script logs one JSON object per line:
+
+```json
+{"step": 0, "train_loss": 5.12}
+{"step": 1, "train_loss": 4.98}
+{"step": 10, "val_loss": 5.01}
+```
+
+JSONL is useful because each line is independent. Later, logs can be streamed,
+read line by line, or plotted.
+
+## Smoke Script
+
+`scripts/train_tiny_smoke.py` runs a tiny CPU-only training smoke test. It uses
+one fixed small batch for 10 steps, logs loss, runs validation, generates text,
+and writes:
 
 ```text
-next token = argmax(last-position logits)
+outputs/phase_05/train_log.jsonl
+outputs/phase_05/generated.txt
 ```
 
-Because the model is barely trained, generated text can still look strange.
-That is expected. Phase 5 proves the mechanics of training and generation; it
-does not try to produce good language yet.
+The fixed batch is not a real data pipeline. It is only a small proof that the
+training loop, validation, logging, and generation all connect correctly.
 
-### Smoke Script
+## Small Example
 
-`scripts/train_tiny_smoke.py` trains on one fixed tiny batch for 10 steps. This
-is intentionally small. It proves the loop works, logs loss, runs validation,
-and saves generated text.
+For tokens:
 
-A real dataset pipeline would continuously sample many shifted chunks from a
-large token stream:
+$$
+[10, 20, 30, 40, 50]
+$$
 
-```text
-x = tokens[start : start + block_size]
-y = tokens[start + 1 : start + block_size + 1]
-```
+with `block_size = 4`:
 
-That belongs in a later data-pipeline phase.
+$$
+x = [10, 20, 30, 40]
+$$
 
-## Experiments To Try
+$$
+y = [20, 30, 40, 50]
+$$
 
-- Change `block_size` and make sure the text has at least `block_size + 1`
-  tokens.
-- Change the learning rate and compare the 10-step loss curve.
-- Change the prompt in `scripts/train_tiny_smoke.py`.
-- Replace greedy `argmax` generation with sampling later.
-- Try shifting the batch start position each step instead of reusing one fixed
-  batch.
-
-## Tests / Checks
-
-```bash
-.venv/bin/python scripts/train_tiny_smoke.py
-.venv/bin/pytest
-.venv/bin/ruff check .
-```
-
-Expected result:
-
-- the smoke script completes on CPU;
-- `outputs/phase_05/train_log.jsonl` is written;
-- `outputs/phase_05/generated.txt` is written;
-- training-loop tests pass;
-- all earlier phase tests still pass;
-- Ruff reports all checks passed.
+The model predicts all four target tokens in one forward pass. The loss is the
+average over those token positions.

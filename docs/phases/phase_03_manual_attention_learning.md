@@ -1,122 +1,173 @@
 # Phase 03: Manual Attention Learning
 
-## What We Built
-
-We added a causal mask and a single-head causal self-attention module. The
-attention module creates query, key, and value vectors, computes attention
-scores, blocks future tokens with a causal mask, applies softmax, and mixes the
-value vectors.
-
-## What I Learned
-
-- I learned that `torch.equal(x, y)` can be used to compare two tensors.
-- I learned that `torch.tril()` can create the lower-triangular mask used for
-  causal attention.
-- I revised the attention workflow: the shapes of `q`, `k`, and `v`, the order
-  of multiplication, masking, softmax, and value mixing.
-
-## High-Level Understanding
-
-Causal self-attention lets each token look at previous tokens and itself, but
-not future tokens. This is what makes the model predict left to right.
+This phase introduced causal self-attention. Attention is the mechanism that
+lets each token mix information from earlier tokens in the same sequence.
 
 The attention flow is:
 
-```text
-x -> q, k, v -> scores -> causal mask -> softmax -> weighted value sum
-```
+$$
+x
+\rightarrow (q, k, v)
+\rightarrow \text{scores}
+\rightarrow \text{causal mask}
+\rightarrow \text{softmax}
+\rightarrow \text{weighted value sum}
+$$
 
-## Intuition / Small Example
+## Causal Attention
 
-For a sequence of length 3, the causal mask is:
+Causal attention means a token can look backward, but not forward.
 
-```python
-[
-    [True, False, False],
-    [True, True, False],
-    [True, True, True],
-]
-```
+For a sequence of length `3`, the causal mask is:
+
+$$
+\begin{bmatrix}
+1 & 0 & 0 \\
+1 & 1 & 0 \\
+1 & 1 & 1
+\end{bmatrix}
+$$
 
 This means:
 
-- token 0 can only look at token 0;
-- token 1 can look at token 0 and token 1;
-- token 2 can look at token 0, token 1, and token 2.
+$$
+\begin{aligned}
+\text{token }0 &\rightarrow \{0\} \\
+\text{token }1 &\rightarrow \{0, 1\} \\
+\text{token }2 &\rightarrow \{0, 1, 2\}
+\end{aligned}
+$$
 
-After masking and softmax, the attention weights might look like:
+Future positions are blocked. This is required for next-token prediction
+because the model should not cheat by seeing tokens that come later.
 
-```python
-[
-    [1.0, 0.0, 0.0],
-    [0.4, 0.6, 0.0],
-    [0.2, 0.3, 0.5],
-]
-```
-
-The upper-right values are zero because those are future-token positions.
-
-## Detailed Explanation
-
-The input to attention has shape:
-
-```text
-(B, T, d_model)
-```
-
-The query, key, and value projections keep the same shape:
-
-```text
-q: (B, T, d_model)
-k: (B, T, d_model)
-v: (B, T, d_model)
-```
-
-Attention scores are computed with:
+`torch.tril()` creates the lower-triangular mask:
 
 ```python
-scores = q @ k.transpose(-2, -1)
+torch.tril(torch.ones((T, T), dtype=torch.bool))
 ```
 
-The shape becomes:
+## Query, Key, And Value
+
+Attention creates three projections from the input:
 
 ```text
+q = query vectors
+k = key vectors
+v = value vectors
+```
+
+The input shape is:
+
+$$
+(B, T, d_{\text{model}})
+$$
+
+The query, key, and value shapes are:
+
+$$
+q, k, v \in \mathbb{R}^{B \times T \times d_{\text{model}}}
+$$
+
+The query asks what a token is looking for. The key describes what each token
+offers. The value is the information that gets mixed together.
+
+## Attention Scores
+
+Scores are computed with:
+
+$$
+\text{scores} = qk^\top
+$$
+
+Shape:
+
+$$
+(B, T, d_{\text{model}})
+\times
+(B, d_{\text{model}}, T)
+\rightarrow
 (B, T, T)
-```
+$$
 
-Each token now has one score for every token position. The causal mask replaces
-future-token scores with `-inf`, so softmax turns those positions into zero
-probability.
+Each token now has one score for every token position.
 
-Then:
+The scores are scaled by:
 
-```python
-weights = scores.softmax(dim=-1)
-out = weights @ v
-```
+$$
+\sqrt{d_{\text{model}}}
+$$
 
-The final output returns to:
+Scaling keeps the scores from becoming too large before softmax.
+
+## Masking And Softmax
+
+Future-token scores are replaced with `-inf`.
+
+After softmax, those positions become probability `0`.
+
+Example attention weights for length `3`:
+
+$$
+\begin{bmatrix}
+1.0 & 0.0 & 0.0 \\
+0.4 & 0.6 & 0.0 \\
+0.2 & 0.3 & 0.5
+\end{bmatrix}
+$$
+
+The upper-right triangle is zero because those are future-token positions.
+
+## Mixing Values
+
+The final attention output is:
+
+$$
+\text{out} = \text{weights} \cdot v
+$$
+
+Shape:
+
+$$
+(B, T, T)
+\times
+(B, T, d_{\text{model}})
+\rightarrow
+(B, T, d_{\text{model}})
+$$
+
+So attention starts and ends with the same shape:
+
+$$
+(B, T, d_{\text{model}})
+\rightarrow
+(B, T, d_{\text{model}})
+$$
+
+This matters because the attention output can be added back to the residual
+stream in later Transformer blocks.
+
+## Small Example
+
+For token 2 in a length-3 sequence, the model can combine information from:
 
 ```text
-(B, T, d_model)
+token 0
+token 1
+token 2
 ```
 
-## Experiments To Try
+If its attention weights are:
 
-- Print the attention weights for a sequence of length 3.
-- Check that `weights[0].triu(diagonal=1)` is all zeros.
-- Change `d_model` and confirm the output shape still matches the input shape.
+$$
+[0.2, 0.3, 0.5]
+$$
 
-## Tests / Checks
+then its output is roughly:
 
-```bash
-.venv/bin/pytest
-.venv/bin/ruff check .
-```
+$$
+0.2v_0 + 0.3v_1 + 0.5v_2
+$$
 
-Expected result:
-
-- causal mask test passes;
-- attention output shape test passes;
-- future-token masking test passes;
-- Ruff reports all checks passed.
+The token is not just copied forward. It becomes a weighted mixture of the
+allowed context.

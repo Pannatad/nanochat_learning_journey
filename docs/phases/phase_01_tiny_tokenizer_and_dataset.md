@@ -1,78 +1,149 @@
-# Phase 01: Tiny Tokenizer and Dataset
+# Phase 01: Tiny Tokenizer And Dataset
 
-## What We Built
+This phase introduced the first data path: raw text becomes token IDs, and
+token IDs become next-token prediction examples.
 
-We added a small byte tokenizer and a tiny next-token dataset helper. The
-tokenizer can encode text into byte token IDs and decode those IDs back into
-text. The dataset helper creates one shifted input/target example for
-next-token prediction.
+The two core pieces are:
 
-## What I Learned
-
-- I learned how to write a test and run it to validate a function I wrote.
-- I learned how a byte tokenizer works.
-- I learned how to write `encode()` and `decode()` using UTF-8.
-- I learned how to write a function that returns the next set of tokens based
-  on `block_size` and the previous tokens.
-
-## High-Level Understanding
-
-Phase 1 turns raw text into token IDs, then turns those token IDs into a simple
-training example. The tokenizer handles text conversion. The dataset helper
-handles the next-token prediction shift.
-
-## Intuition / Small Example
-
-Byte tokenization converts text into numbers:
-
-```python
-"hi" -> [104, 105]
-[104, 105] -> "hi"
+```text
+ByteTokenizer
+make_next_token_example
 ```
 
-Next-token prediction shifts the target by one:
+## Byte Tokenization
 
-```python
-tokens = [1, 2, 3, 4]
+A tokenizer converts text into numbers. Models do not read Python strings
+directly; they read integer token IDs.
 
+This phase used a byte tokenizer. A byte tokenizer represents text as UTF-8
+bytes. Each byte is already an integer from `0` to `255`, so the vocabulary size
+is `256`.
+
+Example:
+
+$$
+\text{"hi"} \rightarrow [104, 105]
+$$
+
+$$
+[104, 105] \rightarrow \text{"hi"}
+$$
+
+`ByteTokenizer.encode()` does:
+
+$$
+\text{string} \rightarrow \text{UTF-8 bytes} \rightarrow \text{list of integers}
+$$
+
+`ByteTokenizer.decode()` does:
+
+$$
+\text{list of integers} \rightarrow \text{bytes} \rightarrow \text{UTF-8 string}
+$$
+
+Byte tokenization is simple and educational. It avoids the complexity of BPE or
+wordpiece tokenizers while still letting the model operate on real text.
+
+## Next-Token Prediction Examples
+
+Language models learn by predicting the next token.
+
+Given tokens:
+
+$$
+\text{tokens} = [1, 2, 3, 4]
+$$
+
+and `block_size = 3`, the input and target are:
+
+$$
 x = [1, 2, 3]
+$$
+
+$$
 y = [2, 3, 4]
+$$
+
+The target is shifted one position to the right. At each position, the model
+sees the current and previous tokens and learns to predict the next token.
+
+Position by position:
+
+$$
+1 \rightarrow 2
+$$
+
+$$
+2 \rightarrow 3
+$$
+
+$$
+3 \rightarrow 4
+$$
+
+The helper:
+
+```python
+make_next_token_example(token_ids, block_size)
 ```
 
-The model reads `x` and learns to predict `y`. At position 0, it sees `1` and
-should predict `2`. At position 1, it sees `2` and should predict `3`.
+returns exactly that shifted pair.
 
-## Detailed Explanation
+## Why Block Size Matters
 
-`ByteTokenizer.encode()` uses UTF-8 to turn a Python string into bytes, then
-converts those bytes into a list of integers.
+`block_size` controls how many tokens are included in one training example.
 
-`ByteTokenizer.decode()` takes a list of byte IDs, converts it back into
-`bytes`, and decodes it with UTF-8 to recover the original string.
+Example:
 
-`make_next_token_example()` takes token IDs and a `block_size`. It returns:
+$$
+\text{tokens} = [10, 20, 30, 40, 50]
+$$
 
-- `x`: the first `block_size` tokens;
-- `y`: the next `block_size` tokens, shifted one position to the right.
+With `block_size = 2`:
 
-This shift is the core idea behind next-token prediction.
+$$
+x = [10, 20]
+$$
 
-## Experiments To Try
+$$
+y = [20, 30]
+$$
 
-- Try encoding and decoding text with spaces, punctuation, or emojis.
-- Change `block_size` and check how `x` and `y` change.
-- Try passing too few tokens and decide what error behavior we should add
-  later.
+With `block_size = 4`:
 
-## Tests / Checks
+$$
+x = [10, 20, 30, 40]
+$$
 
-```bash
-.venv/bin/pytest
-.venv/bin/ruff check .
+$$
+y = [20, 30, 40, 50]
+$$
+
+Later, `block_size` becomes the context length: how many previous tokens the
+model can use when predicting the next token.
+
+## Small Example
+
+Text:
+
+```python
+"hello"
 ```
 
-Expected result:
+Byte IDs:
 
-- byte tokenizer round trip test passes;
-- next-token dataset helper test passes;
-- Ruff reports all checks passed.
+$$
+[104, 101, 108, 108, 111]
+$$
+
+With `block_size = 4`:
+
+$$
+x = [104, 101, 108, 108]
+$$
+
+$$
+y = [101, 108, 108, 111]
+$$
+
+This tiny example contains four next-token prediction tasks.

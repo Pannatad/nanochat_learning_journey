@@ -1,137 +1,164 @@
 # Phase 04: Transformer Block Baseline
 
-## What We Built
+This phase combined attention with the other core pieces of a Transformer
+block: multi-head attention, an MLP, LayerNorm, residual connections, and a
+stack of repeated blocks.
 
-We built the baseline Transformer block. It combines multi-head causal
-attention, an MLP, LayerNorm, residual connections, and a stack of repeated
-blocks.
+The block structure is:
 
-## What I Learned
-
-- I learned the full Transformer block structure:
-  `LayerNorm -> Attention -> residual add -> LayerNorm -> MLP -> residual add`.
-- I learned that residual connections add the branch output back to the main
-  stream.
-- I learned how multi-head attention splits the channel dimension into several
-  heads, runs attention per head, concatenates the outputs, and uses a final
-  linear layer to blend the concatenated information.
-- I learned that the MLP expands from `d_model` to `4 * d_model`, applies
-  `ReLU`, then projects back to `d_model`.
-- I learned that `nn.LayerNorm(d_model)` normalizes the last dimension of the
-  tensor.
-- I learned how `nn.ModuleList` can store `N` Transformer blocks for a stack.
-
-## High-Level Understanding
-
-A Transformer block updates the residual stream while keeping the tensor shape
-the same. Attention mixes information across token positions. The MLP updates
-each token's feature vector. Residual connections keep the original stream
-available and make stacking blocks possible.
-
-## Intuition / Small Example
-
-The block flow is:
-
-```text
+$$
 x
-|
-|---- LayerNorm -> Multi-head attention ----|
-|                                           |
-+ <-----------------------------------------|
-|
-|---- LayerNorm -> MLP ---------------------|
-|                                           |
-+ <-----------------------------------------|
-|
-output
-```
+\rightarrow \text{LayerNorm}
+\rightarrow \text{multi-head causal attention}
+\rightarrow \text{residual add}
+\rightarrow \text{LayerNorm}
+\rightarrow \text{MLP}
+\rightarrow \text{residual add}
+$$
 
-With stacked blocks:
+## Residual Stream
 
-```text
-x -> block 1 -> block 2 -> ... -> block N -> output
-```
+The residual stream is the main tensor that flows through the Transformer.
 
-Each block preserves:
+Shape:
 
-```text
-(B, T, C) -> (B, T, C)
-```
+$$
+(B, T, d_{\text{model}})
+$$
 
-## Detailed Explanation
+Each block updates this stream but keeps the same shape. That makes it possible
+to stack many blocks.
 
-### Multi-Head Attention
+Residual connections add a branch output back to the main stream:
 
-The input has shape:
+$$
+x \leftarrow x + \text{attention}(\text{norm}_1(x))
+$$
 
-```text
-(B, T, C)
-```
+$$
+x \leftarrow x + \text{MLP}(\text{norm}_2(x))
+$$
 
-For `n_head` heads, each head receives:
+The branch output must have the same shape as `x`.
 
-```text
-(B, T, C / n_head)
-```
+## Multi-Head Attention
+
+Single-head attention computes one attention pattern. Multi-head attention
+splits the channel dimension into multiple smaller heads.
+
+Example:
+
+$$
+d_{\text{model}} = 8,\quad n_{\text{head}} = 2,\quad d_{\text{head}} = 4
+$$
+
+The input is split from:
+
+$$
+(B, T, 8)
+$$
+
+into two heads:
+
+$$
+(B, T, 4),\quad (B, T, 4)
+$$
 
 Each head runs causal self-attention. The outputs are concatenated back into:
 
-```text
-(B, T, C)
-```
+$$
+(B, T, 8)
+$$
 
-Then a final linear projection blends the concatenated head information.
+A final linear projection blends the concatenated heads.
 
-### MLP
+`d_model` must divide evenly by `n_head`, otherwise the channels cannot be split
+equally.
 
-The MLP works on the last dimension:
+## MLP
 
-```text
-(B, T, d_model)
--> Linear(d_model, 4 * d_model)
--> ReLU
--> Linear(4 * d_model, d_model)
--> (B, T, d_model)
-```
+The MLP updates each token vector independently. It does not mix positions like
+attention does.
 
-### LayerNorm
+The shape flow is:
 
-`nn.LayerNorm(d_model)` normalizes the last dimension. For example:
+$$
+(B, T, d_{\text{model}})
+\rightarrow \text{Linear}(d_{\text{model}}, 4d_{\text{model}})
+\rightarrow \text{ReLU}
+\rightarrow \text{Linear}(4d_{\text{model}}, d_{\text{model}})
+\rightarrow (B, T, d_{\text{model}})
+$$
 
-```text
+The expansion to `4 * d_model` gives the block more capacity to transform each
+token's features before projecting back to the residual stream size.
+
+## LayerNorm
+
+`nn.LayerNorm(d_model)` normalizes the last dimension.
+
+Example shape:
+
+$$
 (2, 4, 6, 8)
-```
+$$
 
-means LayerNorm would normalize each vector of length `8`.
+LayerNorm normalizes each vector of length `8`.
 
-### Transformer Block
+This phase uses pre-norm structure, meaning normalization happens before the
+attention or MLP branch:
 
-The block uses pre-norm structure:
+$$
+\text{LayerNorm}
+\rightarrow \text{branch}
+\rightarrow \text{residual add}
+$$
 
-```python
-x = x + attention(norm1(x))
-x = x + mlp(norm2(x))
-```
+Pre-norm is common because it makes deeper Transformer stacks easier to train.
 
-The residual additions require every branch to return the same shape as `x`.
+## Transformer Stack
 
-## Experiments To Try
+A stack repeats the same block structure multiple times:
 
-- Change `n_head` and confirm `d_model` must divide evenly by `n_head`.
-- Change the number of stacked blocks and confirm the output shape is unchanged.
-- Print the tensor shape after attention, MLP, and each residual add.
+$$
+x
+\rightarrow \text{block}_1
+\rightarrow \text{block}_2
+\rightarrow \text{block}_3
+\rightarrow \text{output}
+$$
 
-## Tests / Checks
+`nn.ModuleList` stores the blocks so PyTorch can track their parameters.
 
-```bash
-.venv/bin/pytest
-.venv/bin/ruff check .
-```
+Every block preserves shape:
 
-Expected result:
+$$
+(B, T, d_{\text{model}})
+\rightarrow
+(B, T, d_{\text{model}})
+$$
 
-- feedforward shape test passes;
-- multi-head attention shape test passes;
-- Transformer block shape and finite-output tests pass;
-- Transformer stack shape, finite-output, and layer-count tests pass;
-- Ruff reports all checks passed.
+This is the main contract that makes the stack simple.
+
+## Small Example
+
+With:
+
+$$
+B = 2,\quad T = 3,\quad d_{\text{model}} = 8,\quad n_{\text{head}} = 2
+$$
+
+the attention heads each receive:
+
+$$
+(2, 3, 4)
+$$
+
+After attention, concatenation, projection, MLP, and residual adds, the block
+still returns:
+
+$$
+(2, 3, 8)
+$$
+
+The block changes the values, not the outer shape.
