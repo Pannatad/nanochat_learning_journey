@@ -20,8 +20,10 @@ $$
 
 The model returns logits shaped:
 
+Here, $V$ is the vocabulary size.
+
 $$
-(B, T, \text{vocab\_size})
+(B, T, V)
 $$
 
 Targets are token IDs shaped:
@@ -33,9 +35,9 @@ $$
 Cross entropy expects one row per prediction, so batch and time are flattened:
 
 $$
-\text{logits}: (B, T, \text{vocab\_size})
+\text{logits}: (B, T, V)
 \rightarrow
-(B \cdot T, \text{vocab\_size})
+(B \cdot T, V)
 $$
 
 $$
@@ -45,7 +47,7 @@ $$
 Example:
 
 $$
-B = 2,\quad T = 3,\quad \text{vocab\_size} = 256
+B = 2,\quad T = 3,\quad V = 256
 $$
 
 The batch contains:
@@ -191,7 +193,7 @@ last_logits = logits[:, -1, :]
 Shape:
 
 $$
-(B, \text{vocab\_size})
+(B, V)
 $$
 
 Greedy decoding uses:

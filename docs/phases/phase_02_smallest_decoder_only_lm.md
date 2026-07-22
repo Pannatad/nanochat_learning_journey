@@ -46,8 +46,10 @@ token ID.
 
 For the byte tokenizer:
 
+Here, $V$ is the vocabulary size.
+
 $$
-\text{vocab\_size} = 256
+V = 256
 $$
 
 If:
@@ -80,7 +82,7 @@ Shape change:
 $$
 (B, T, d_{\text{model}})
 \rightarrow
-(B, T, \text{vocab\_size})
+(B, T, V)
 $$
 
 The output is called logits. Logits are raw scores, one score for every
@@ -107,7 +109,7 @@ $$
 The logits start as:
 
 $$
-(B, T, \text{vocab\_size})
+(B, T, V)
 $$
 
 Targets start as:
@@ -133,7 +135,7 @@ This turns every token position into one classification example.
 If:
 
 $$
-B = 2,\quad T = 3,\quad \text{vocab\_size} = 256
+B = 2,\quad T = 3,\quad V = 256
 $$
 
 then the model produces:
