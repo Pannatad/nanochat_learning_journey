@@ -19,7 +19,7 @@ can follow the same path step by step.
 | [Phase 6](phase_06_reproducible_experiment_system.md) | Reproducible experiment system | Medium | Complete |
 | [Phase 7](phase_07_trainable_bpe_tokenizer.md) | Trainable BPE tokenizer | Hard | Complete |
 | [Phase 8](phase_08_tokenized_data_pipeline.md) | Tokenized data pipeline | Medium | Complete |
-| Phase 9 | nanochat-style architecture baseline | Very hard | Planned |
+| [Phase 9](phase_09_nanochat_style_architecture_baseline.md) | nanochat-style architecture baseline | Very hard | Complete |
 | Phase 10 | RMSNorm | Medium | Planned |
 | Phase 11 | RoPE | Hard | Planned |
 | Phase 12 | QK norm | Hard | Planned |
