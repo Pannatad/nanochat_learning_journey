@@ -18,21 +18,14 @@ LayerNorm recenters and rescales a hidden vector. Before applying its learned
 scale and bias, it subtracts the mean and divides by the standard deviation:
 
 $$
-\mathrm{LayerNorm}(x)
-=
-\gamma \odot
-\frac{x-\mu}{\sqrt{\sigma^2+\epsilon}}
-+\beta
+\mathrm{LayerNorm}(x) = \gamma \odot \frac{x-\mu}{\sqrt{\sigma^2+\epsilon}} + \beta
 $$
 
 RMSNorm does not subtract the mean. It controls only the vector's overall
 magnitude:
 
 $$
-\mathrm{RMSNorm}(x)
-=
-\gamma \odot
-\frac{x}{\sqrt{\frac{1}{C}\sum_{i=1}^{C}x_i^2+\epsilon}}
+\mathrm{RMSNorm}(x) = \gamma \odot \frac{x}{\sqrt{\frac{1}{C}\sum_{i=1}^{C}x_i^2+\epsilon}}
 $$
 
 Here, $C$ is `d_model` and $\gamma$ is the learned feature weight. Dividing by
@@ -108,12 +101,7 @@ $$
 With `eps=0` and $\gamma=[1,1]$:
 
 $$
-\mathrm{RMSNorm}(x)
-=
-\left[
-\frac{3}{\sqrt{12.5}},
-\frac{4}{\sqrt{12.5}}
-\right]
+\mathrm{RMSNorm}(x) = \left[\frac{3}{\sqrt{12.5}}, \frac{4}{\sqrt{12.5}}\right]
 $$
 
 If $\gamma=[2,0.5]$, the first normalized feature is amplified while the
