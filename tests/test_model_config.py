@@ -124,3 +124,16 @@ def test_modern_model_config_rejects_unknown_attention():
             n_layer=3,
             attention="unknown_attention",
         )
+
+
+def test_modern_model_config_accepts_rms_norm():
+    config = ModernModelConfig(
+        vocab_size=512,
+        block_size=128,
+        d_model=64,
+        n_head=4,
+        n_layer=3,
+        normalization="rms_norm",
+    )
+
+    assert config.normalization == "rms_norm"

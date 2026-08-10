@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-SUPPORTED_NORMALIZATIONS = frozenset({"layer_norm"})
+SUPPORTED_NORMALIZATIONS = frozenset({"layer_norm", "rms_norm"})
 SUPPORTED_ACTIVATIONS = frozenset({"relu"})
 SUPPORTED_ATTENTION_TYPES = frozenset({"causal_mha"})
 

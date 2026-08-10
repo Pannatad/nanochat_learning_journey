@@ -1,11 +1,14 @@
 from torch import nn
 
 from llm_lab.model.attention import MultiHeadCausalSelfAttention
+from llm_lab.model.normalization import RMSNorm
 
 
 def build_normalization(kind: str, d_model: int) -> nn.Module:
     if kind == "layer_norm":
         return nn.LayerNorm(d_model)
+    if kind == "rms_norm":
+        return RMSNorm(d_model=d_model)
 
     raise ValueError(f"unsupported normalization: {kind}")
 

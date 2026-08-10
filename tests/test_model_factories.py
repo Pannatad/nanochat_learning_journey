@@ -8,6 +8,7 @@ from llm_lab.model.factories import (
     build_attention,
     build_normalization,
 )
+from llm_lab.model.normalization import RMSNorm
 
 
 def test_build_normalization_creates_layer_norm():
@@ -18,6 +19,16 @@ def test_build_normalization_creates_layer_norm():
 
     assert isinstance(normalization, nn.LayerNorm)
     assert normalization.normalized_shape == (64,)
+
+
+def test_build_normalization_creates_rms_norm():
+    normalization = build_normalization(
+        kind="rms_norm",
+        d_model=64,
+    )
+
+    assert isinstance(normalization, RMSNorm)
+    assert normalization.weight.shape == (64,)
 
 
 def test_build_normalization_rejects_unknown_kind():

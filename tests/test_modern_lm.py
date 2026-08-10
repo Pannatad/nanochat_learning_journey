@@ -5,6 +5,7 @@ from torch import nn
 from llm_lab.model.config import ModernModelConfig
 from llm_lab.model.modern_block import ModernTransformerBlock
 from llm_lab.model.modern_lm import ModernLanguageModel
+from llm_lab.model.normalization import RMSNorm
 
 
 def test_modern_language_model_has_expected_components():
@@ -279,3 +280,31 @@ def test_modern_language_model_cannot_use_future_tokens():
         logits_a[:, :shared_prefix_length, :],
         logits_b[:, :shared_prefix_length, :],
     )
+
+
+def test_modern_language_model_uses_rms_norm_when_configured():
+    config = ModernModelConfig(
+        vocab_size=128,
+        block_size=8,
+        d_model=32,
+        n_head=4,
+        n_layer=2,
+        normalization="rms_norm",
+    )
+    model = ModernLanguageModel(config)
+
+    assert isinstance(model.final_norm, RMSNorm)
+    assert all(
+        isinstance(block.norm1, RMSNorm) and isinstance(block.norm2, RMSNorm)
+        for block in model.blocks
+    )
+
+    token_ids = torch.tensor(
+        [[10, 20, 30, 40]],
+        dtype=torch.long,
+    )
+
+    logits = model(token_ids)
+
+    assert logits.shape == (1, 4, config.vocab_size)
+    assert torch.isfinite(logits).all()

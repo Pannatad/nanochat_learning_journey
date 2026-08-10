@@ -5,6 +5,7 @@ from torch import nn
 from llm_lab.model.attention import MultiHeadCausalSelfAttention
 from llm_lab.model.config import ModernModelConfig
 from llm_lab.model.modern_block import ModernFeedForward, ModernTransformerBlock
+from llm_lab.model.normalization import RMSNorm
 
 
 def test_modern_feed_forward_has_expected_components():
@@ -145,3 +146,26 @@ def test_modern_transformer_block_supports_backpropagation():
         for gradient in parameter_gradients
         if gradient is not None
     )
+
+
+def test_modern_transformer_block_uses_rms_norm_when_configured():
+    config = ModernModelConfig(
+        vocab_size=512,
+        block_size=128,
+        d_model=64,
+        n_head=4,
+        n_layer=3,
+        normalization="rms_norm",
+    )
+
+    block = ModernTransformerBlock(config)
+
+    # Verify norm1 is RMSNorm.
+    assert isinstance(block.norm1, RMSNorm)
+    # Verify norm2 is RMSNorm.
+    assert isinstance(block.norm2, RMSNorm)
+    # Verify they are separate module instances.
+    assert block.norm1 is not block.norm2
+    # Verify both weight shapes are (64,).
+    assert block.norm1.weight.shape == (64,)
+    assert block.norm2.weight.shape == (64,)
