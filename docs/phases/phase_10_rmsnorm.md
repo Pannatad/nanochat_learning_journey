@@ -18,7 +18,7 @@ LayerNorm recenters and rescales a hidden vector. Before applying its learned
 scale and bias, it subtracts the mean and divides by the standard deviation:
 
 $$
-\operatorname{LayerNorm}(x)
+\mathrm{LayerNorm}(x)
 =
 \gamma \odot
 \frac{x-\mu}{\sqrt{\sigma^2+\epsilon}}
@@ -29,7 +29,7 @@ RMSNorm does not subtract the mean. It controls only the vector's overall
 magnitude:
 
 $$
-\operatorname{RMSNorm}(x)
+\mathrm{RMSNorm}(x)
 =
 \gamma \odot
 \frac{x}{\sqrt{\frac{1}{C}\sum_{i=1}^{C}x_i^2+\epsilon}}
@@ -102,13 +102,13 @@ $$
 $$
 
 $$
-\operatorname{RMS}(x)=\sqrt{12.5}
+\mathrm{RMS}(x)=\sqrt{12.5}
 $$
 
 With `eps=0` and $\gamma=[1,1]$:
 
 $$
-\operatorname{RMSNorm}(x)
+\mathrm{RMSNorm}(x)
 =
 \left[
 \frac{3}{\sqrt{12.5}},
@@ -190,7 +190,7 @@ RMSNorm:   gamma        =  C parameters
 RMSNorm therefore removes $C$ parameters per site. Across the complete model:
 
 $$
-\text{reduction}=(2L+1)C
+\Delta_{\mathrm{params}}=(2L+1)C
 $$
 
 For the comparison model with `n_layer=2` and `d_model=16`:
