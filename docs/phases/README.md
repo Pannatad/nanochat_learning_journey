@@ -21,7 +21,7 @@ can follow the same path step by step.
 | [Phase 8](phase_08_tokenized_data_pipeline.md) | Tokenized data pipeline | Medium | Complete |
 | [Phase 9](phase_09_nanochat_style_architecture_baseline.md) | nanochat-style architecture baseline | Very hard | Complete |
 | [Phase 10](phase_10_rmsnorm.md) | RMSNorm | Medium | Complete |
-| Phase 11 | RoPE | Hard | Planned |
+| [Phase 11](phase_11_rope.md) | RoPE | Hard | Complete |
 | Phase 12 | QK norm | Hard | Planned |
 | Phase 13 | Activation experiments | Medium | Planned |
 | Phase 14 | Untied embeddings | Medium | Planned |

@@ -18,10 +18,11 @@ def test_modern_model_config_stores_architecture_values():
     assert config.d_model == 64
     assert config.n_head == 4
     assert config.n_layer == 3
-    # Also verify the three component defaults.
+    # Also verify the component defaults.
     assert config.normalization == "layer_norm"
     assert config.activation == "relu"
     assert config.attention == "causal_mha"
+    assert config.positional_embedding == "learned"
 
 
 def test_modern_model_config_rejects_non_positive_vocab_size():
@@ -137,3 +138,28 @@ def test_modern_model_config_accepts_rms_norm():
     )
 
     assert config.normalization == "rms_norm"
+
+
+def test_modern_model_config_accepts_rope_position_encoding():
+    config = ModernModelConfig(
+        vocab_size=512,
+        block_size=128,
+        d_model=64,
+        n_head=4,
+        n_layer=3,
+        positional_embedding="rope",
+    )
+
+    assert config.positional_embedding == "rope"
+
+
+def test_modern_model_config_rejects_unknown_position_encoding():
+    with pytest.raises(ValueError, match="pos_embedding"):
+        ModernModelConfig(
+            vocab_size=512,
+            block_size=128,
+            d_model=64,
+            n_head=4,
+            n_layer=3,
+            positional_embedding="unknown_position_encoding",
+        )

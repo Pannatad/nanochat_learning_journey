@@ -1,6 +1,7 @@
 import pytest
 import torch
 
+import llm_lab.model.attention as attention_module
 from llm_lab.model.attention import (
     MultiHeadCausalSelfAttention,
     SingleHeadCausalSelfAttention,
@@ -32,6 +33,47 @@ def test_single_head_attention_output_shape():
     attention = SingleHeadCausalSelfAttention(d_model=4)
     output = attention(x)
     assert output.shape == x.shape
+
+
+def test_single_head_attention_rope_output_is_finite_and_preserves_shape():
+    x = torch.rand(2, 3, 4)
+    attention = SingleHeadCausalSelfAttention(d_model=4, use_rope=True)
+
+    output = attention(x)
+
+    assert output.shape == x.shape
+    assert torch.isfinite(output).all()
+
+
+def test_single_head_attention_rotates_projected_query_and_key_separately(
+    monkeypatch,
+):
+    x = torch.rand(1, 3, 4)
+    attention = SingleHeadCausalSelfAttention(d_model=4, use_rope=True)
+    projected_query = attention.query(x)
+    projected_key = attention.key(x)
+    rotated_inputs = []
+
+    def record_rotation(tensor, cosine, sine):
+        rotated_inputs.append(tensor)
+        return tensor
+
+    monkeypatch.setattr(
+        attention_module,
+        "apply_rotary_embedding",
+        record_rotation,
+    )
+
+    attention(x)
+
+    assert len(rotated_inputs) == 2
+    torch.testing.assert_close(rotated_inputs[0], projected_query)
+    torch.testing.assert_close(rotated_inputs[1], projected_key)
+
+
+def test_single_head_attention_rope_requires_even_head_dimension():
+    with pytest.raises(ValueError, match="even head dimension"):
+        SingleHeadCausalSelfAttention(d_model=3, use_rope=True)
 
 
 def test_single_head_attention_cannot_attend_to_future_tokens():

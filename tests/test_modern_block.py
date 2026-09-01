@@ -169,3 +169,28 @@ def test_modern_transformer_block_uses_rms_norm_when_configured():
     # Verify both weight shapes are (64,).
     assert block.norm1.weight.shape == (64,)
     assert block.norm2.weight.shape == (64,)
+
+
+@pytest.mark.parametrize(
+    ("positional_embedding", "expected_use_rope"),
+    [
+        ("learned", False),
+        ("rope", True),
+    ],
+)
+def test_modern_transformer_block_propagates_position_encoding_to_every_head(
+    positional_embedding,
+    expected_use_rope,
+):
+    config = ModernModelConfig(
+        vocab_size=512,
+        block_size=128,
+        d_model=64,
+        n_head=4,
+        n_layer=3,
+        positional_embedding=positional_embedding,
+    )
+
+    block = ModernTransformerBlock(config)
+
+    assert all(head.use_rope is expected_use_rope for head in block.attention.head)

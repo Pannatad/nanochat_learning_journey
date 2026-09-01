@@ -1,16 +1,20 @@
 import torch
 from torch import nn
 
+from llm_lab.model.rope import apply_rotary_embedding, build_rope_cache
+
 
 def make_causal_mask(sequence_length: int) -> torch.Tensor:
-    return torch.tril(
-        torch.ones((sequence_length, sequence_length), dtype=torch.bool)
-    )
+    return torch.tril(torch.ones((sequence_length, sequence_length), dtype=torch.bool))
 
 
 class SingleHeadCausalSelfAttention(nn.Module):
-    def __init__(self, d_model: int):
+    def __init__(self, d_model: int, use_rope: bool = False):
         super().__init__()
+        if use_rope and d_model % 2 != 0:
+            raise ValueError("RoPE requires an even head dimension")
+
+        self.use_rope = use_rope
         self.d_model = d_model
         self.query = nn.Linear(d_model, d_model)
         self.key = nn.Linear(d_model, d_model)
@@ -24,6 +28,14 @@ class SingleHeadCausalSelfAttention(nn.Module):
         q = self.query(x)  # (B, T, d_model)
         k = self.key(x)  # (B, T, d_model)
         v = self.value(x)  # (B, T, d_model)
+        if self.use_rope:
+            cosine, sine = build_rope_cache(
+                sequence_length=x.shape[1],
+                head_dim=self.d_model,
+                device=x.device,
+            )
+            q = apply_rotary_embedding(q, cosine, sine)
+            k = apply_rotary_embedding(k, cosine, sine)
         scores = (q @ k.transpose(-2, -1)) / self.d_model**0.5
         mask = make_causal_mask(sequence_length=x.shape[1])
         scores = scores.masked_fill(~mask, float("-inf"))
@@ -36,7 +48,7 @@ class SingleHeadCausalSelfAttention(nn.Module):
 
 
 class MultiHeadCausalSelfAttention(nn.Module):
-    def __init__(self, n_head: int, d_model: int):
+    def __init__(self, n_head: int, d_model: int, use_rope: bool = False):
         super().__init__()
         if d_model % n_head != 0:
             raise ValueError("d_model must be divisible by num_heads")
@@ -44,7 +56,10 @@ class MultiHeadCausalSelfAttention(nn.Module):
         self.d_model = d_model
         self.head_dim = d_model // n_head
         self.head = nn.ModuleList(
-            [SingleHeadCausalSelfAttention(self.head_dim) for _ in range(n_head)]
+            [
+                SingleHeadCausalSelfAttention(self.head_dim, use_rope=use_rope)
+                for _ in range(n_head)
+            ]
         )
         self.output_projection = nn.Linear(d_model, d_model)
 

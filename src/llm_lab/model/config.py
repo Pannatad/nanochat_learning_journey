@@ -3,6 +3,7 @@ from dataclasses import dataclass
 SUPPORTED_NORMALIZATIONS = frozenset({"layer_norm", "rms_norm"})
 SUPPORTED_ACTIVATIONS = frozenset({"relu"})
 SUPPORTED_ATTENTION_TYPES = frozenset({"causal_mha"})
+SUPPORTED_POSITIONAL_EMBEDDING = frozenset({"learned", "rope"})
 
 
 @dataclass
@@ -18,6 +19,7 @@ class ModernModelConfig:
     normalization: str = "layer_norm"
     activation: str = "relu"
     attention: str = "causal_mha"
+    positional_embedding: str = "learned"
 
     def __post_init__(self) -> None:
         if self.vocab_size <= 0:
@@ -44,4 +46,9 @@ class ModernModelConfig:
         if self.attention not in SUPPORTED_ATTENTION_TYPES:
             raise ValueError(
                 f"Unsupported attention type: {self.attention}. Supported attention types are: {SUPPORTED_ATTENTION_TYPES}"
+            )
+
+        if self.positional_embedding not in SUPPORTED_POSITIONAL_EMBEDDING:
+            raise ValueError(
+                f"Unsupported pos_embedding type: {self.positional_embedding}. Supported attention types are: {SUPPORTED_POSITIONAL_EMBEDDING}"
             )

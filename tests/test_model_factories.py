@@ -102,6 +102,17 @@ def test_built_attention_preserves_hidden_shape():
     assert torch.isfinite(output).all()
 
 
+def test_build_attention_enables_rope_in_every_head():
+    attention = build_attention(
+        kind="causal_mha",
+        d_model=64,
+        n_head=4,
+        use_rope=True,
+    )
+
+    assert all(head.use_rope for head in attention.head)
+
+
 def test_build_attention_rejects_unknown_kind():
     with pytest.raises(ValueError, match="attention"):
         build_attention(

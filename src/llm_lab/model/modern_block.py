@@ -60,6 +60,7 @@ class ModernTransformerBlock(nn.Module):
             kind=config.attention,
             d_model=config.d_model,
             n_head=config.n_head,
+            use_rope=config.positional_embedding == "rope",
         )
 
         self.norm2 = build_normalization(

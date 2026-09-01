@@ -67,6 +67,88 @@ def test_modern_language_model_combines_token_and_position_embeddings():
     torch.testing.assert_close(hidden, expected)
 
 
+def test_rope_language_model_uses_token_embeddings_without_position_table():
+    config = ModernModelConfig(
+        vocab_size=32,
+        block_size=8,
+        d_model=8,
+        n_head=2,
+        n_layer=1,
+        positional_embedding="rope",
+    )
+    model = ModernLanguageModel(config)
+    token_ids = torch.tensor([[1, 2, 3]])
+
+    hidden = model._embed_inputs(token_ids)
+
+    assert model.position_embeddings is None
+    torch.testing.assert_close(hidden, model.token_embeddings(token_ids))
+
+
+def test_rope_language_model_forward_is_finite_and_preserves_output_shape():
+    config = ModernModelConfig(
+        vocab_size=32,
+        block_size=8,
+        d_model=8,
+        n_head=2,
+        n_layer=1,
+        positional_embedding="rope",
+    )
+    model = ModernLanguageModel(config)
+    token_ids = torch.tensor([[1, 2, 3], [4, 5, 6]])
+
+    logits = model(token_ids)
+
+    assert logits.shape == (2, 3, 32)
+    assert torch.isfinite(logits).all()
+
+
+def test_rope_model_removes_learned_position_parameters():
+    shared_config = {
+        "vocab_size": 32,
+        "block_size": 8,
+        "d_model": 8,
+        "n_head": 2,
+        "n_layer": 1,
+    }
+    learned_model = ModernLanguageModel(
+        ModernModelConfig(**shared_config, positional_embedding="learned")
+    )
+    rope_model = ModernLanguageModel(
+        ModernModelConfig(**shared_config, positional_embedding="rope")
+    )
+
+    learned_parameters = sum(
+        parameter.numel() for parameter in learned_model.parameters()
+    )
+    rope_parameters = sum(parameter.numel() for parameter in rope_model.parameters())
+
+    assert learned_parameters - rope_parameters == 8 * 8
+
+
+def test_rope_language_model_supports_backpropagation():
+    config = ModernModelConfig(
+        vocab_size=32,
+        block_size=8,
+        d_model=8,
+        n_head=2,
+        n_layer=1,
+        positional_embedding="rope",
+    )
+    model = ModernLanguageModel(config)
+    token_ids = torch.tensor([[1, 2, 3], [4, 5, 6]])
+
+    loss = model(token_ids).square().mean()
+    loss.backward()
+
+    gradients = [
+        parameter.grad for parameter in model.parameters() if parameter.requires_grad
+    ]
+    assert gradients
+    assert all(gradient is not None for gradient in gradients)
+    assert all(torch.isfinite(gradient).all() for gradient in gradients)
+
+
 def test_embed_inputs_requires_batch_and_sequence_dimensions():
     config = ModernModelConfig(
         vocab_size=512,

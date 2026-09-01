@@ -15,11 +15,13 @@ class ModernLanguageModel(nn.Module):
             num_embeddings=config.vocab_size,
             embedding_dim=config.d_model,
         )
-
-        self.position_embeddings = nn.Embedding(
-            num_embeddings=config.block_size,
-            embedding_dim=config.d_model,
-        )
+        if self.config.positional_embedding == "learned":
+            self.position_embeddings = nn.Embedding(
+                num_embeddings=config.block_size,
+                embedding_dim=config.d_model,
+            )
+        else:
+            self.position_embeddings = None
 
         self.blocks = nn.ModuleList(
             [ModernTransformerBlock(config) for _ in range(config.n_layer)]
@@ -53,13 +55,15 @@ class ModernLanguageModel(nn.Module):
         if sequence_length > self.config.block_size:
             raise ValueError("sequence length cannot exceed block_size")
 
+        token_embeddings = self.token_embeddings(
+            token_ids,
+        )
+        if self.position_embeddings is None:
+            return token_embeddings
+
         positions = torch.arange(
             sequence_length,
             device=token_ids.device,
-        )
-
-        token_embeddings = self.token_embeddings(
-            token_ids,
         )
         position_embeddings = self.position_embeddings(
             positions,

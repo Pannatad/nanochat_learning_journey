@@ -20,14 +20,11 @@ def build_activation(kind: str) -> nn.Module:
 
 
 def build_attention(
-    kind: str,
-    d_model: int,
-    n_head: int,
+    kind: str, d_model: int, n_head: int, use_rope: bool = False
 ) -> nn.Module:
     if kind == "causal_mha":
         return MultiHeadCausalSelfAttention(
-            n_head=n_head,
-            d_model=d_model,
+            n_head=n_head, d_model=d_model, use_rope=use_rope
         )
 
     raise ValueError(f"unsupported attention: {kind}")
