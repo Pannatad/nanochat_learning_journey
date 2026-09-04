@@ -5,10 +5,12 @@
 This repository is a public learning lab for building a small ChatGPT-like
 system step by step.
 
-The destination is inspired by Andrej Karpathy's `nanochat`: a compact,
+The destination is inspired by Andrej Karpathy's [`nanochat`](https://github.com/karpathy/nanochat): a compact,
 hackable, end-to-end LLM system that includes tokenizer training, pretraining,
 supervised finetuning, reinforcement learning, evaluation, inference, and a chat
 interface.
+
+The formal citation is available in [`references.bib`](references.bib).
 
 This repository should not copy `nanochat` directly. It should rebuild the
 ideas in a slower, more educational way so each concept can be understood,
@@ -974,4 +976,3 @@ When a design detail is not specified, choose the simplest explicit solution
 that preserves component replaceability, experiment value, and learning value.
 Record material decisions in docs/architecture_decisions.md.
 ```
-
